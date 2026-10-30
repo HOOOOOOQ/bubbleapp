@@ -453,6 +453,69 @@ class BubbleRepository {
   Future<void> switchAccountMode({required String mode, String? businessId}) =>
       _client.rpc('switch_account_mode', params: {'p_mode': mode, 'p_business_id': businessId});
 
+  // ---------------------------------------------------------------- calls, pins, stars (0009)
+
+  /// Starts a voice or video call in a direct conversation. Returns the call id.
+  Future<String> startCall({required String conversationId, required String media}) async {
+    final id = await _client.rpc('start_call', params: {
+      'p_conversation_id': conversationId,
+      'p_media': media,
+    });
+    return id.toString();
+  }
+
+  Future<void> answerCall(String callId) =>
+      _client.rpc('answer_call', params: {'p_call_id': callId});
+
+  Future<void> declineCall(String callId) =>
+      _client.rpc('decline_call', params: {'p_call_id': callId});
+
+  Future<void> endCall(String callId) =>
+      _client.rpc('end_call', params: {'p_call_id': callId});
+
+  /// Call history for the signed-in user (RLS limits rows to their own calls).
+  Future<List<Map<String, dynamic>>> myCalls({int limit = 50}) async {
+    final rows = await _client
+        .from('calls')
+        .select()
+        .order('started_at', ascending: false)
+        .limit(limit);
+    return rows.cast<Map<String, dynamic>>();
+  }
+
+  /// Pins or unpins a message for everyone in the conversation (members only).
+  Future<void> setMessagePinned({required String messageId, required bool pinned}) =>
+      _client.rpc('set_message_pinned', params: {
+        'p_message_id': messageId,
+        'p_pinned': pinned,
+      });
+
+  Future<void> starMessage(String messageId) async {
+    final uid = currentUserId;
+    if (uid == null) throw StateError('Not signed in');
+    await _client.from('message_stars').insert({'user_id': uid, 'message_id': messageId});
+  }
+
+  Future<void> unstarMessage(String messageId) async {
+    final uid = currentUserId;
+    if (uid == null) throw StateError('Not signed in');
+    await _client
+        .from('message_stars')
+        .delete()
+        .eq('user_id', uid)
+        .eq('message_id', messageId);
+  }
+
+  /// Security events (role and account changes) for the signed-in user.
+  Future<List<Map<String, dynamic>>> mySecurityEvents({int limit = 50}) async {
+    final rows = await _client
+        .from('security_events')
+        .select()
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return rows.cast<Map<String, dynamic>>();
+  }
+
   // ---------------------------------------------------------------- settings, notifications
 
   Future<Map<String, dynamic>?> mySettings() async {

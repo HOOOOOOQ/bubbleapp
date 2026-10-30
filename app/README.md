@@ -79,9 +79,17 @@ Built (routed, wired to the backend):
 | Owner | Platform metrics, owner and admin audit logs (`features/owner`) |
 | Admin console | Users (search, suspend/ban/restore), reports (dismiss, warn, hide, suspend, escalate), platform announcements, audit log (`features/admin`) |
 
+Database-backed but without UI yet (repository methods exist in `lib/data/bubble_repository.dart`):
+
+- Direct voice/video calls (`startCall`, `answerCall`, `declineCall`, `endCall`, `myCalls`).
+- Message pin and star (`setMessagePinned`, `starMessage`, `unstarMessage`).
+- Security events feed (`mySecurityEvents`).
+
 Not built (the originally planned ~112 pages are **not** delivered):
 
 - Direct and group **messaging UI** (the database tables and functions exist; the chat screens do not).
+- Call screens, incoming-call UI, and FCM push delivery (notification rows are created; push is not wired).
+- Typing indicators and realtime subscriptions (planned via Supabase Realtime broadcast; not implemented).
 - Stories, communities, contacts, blocking UI, and comments on channel posts.
 - Business catalog, quick replies and operator management screens.
 - Premium purchase/entitlement screens (the `premium_subscriptions` table exists; there is no billing).

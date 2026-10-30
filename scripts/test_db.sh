@@ -15,4 +15,5 @@ done
 "${PSQL[@]}" -f "$ROOT/supabase/tests/01_helpers.sql"
 "${PSQL[@]}" -f "$ROOT/supabase/tests/02_scenarios.sql"
 "${PSQL[@]}" -f "$ROOT/supabase/tests/03_scenarios_business_social_ops.sql"
+"${PSQL[@]}" -f "$ROOT/supabase/tests/04_scenarios_messaging_calls.sql"
 echo "== suite finished"
