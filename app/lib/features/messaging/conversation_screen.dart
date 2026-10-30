@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/bubble_error.dart';
 import '../../core/connectivity_service.dart';
 import '../../data/messaging_repository.dart';
 import '../../models/messaging.dart';
 import '../../state/messaging_providers.dart';
 import '../../widgets/common.dart';
+import '../calls/state/call_manager.dart';
 import 'widgets/chat_header.dart';
 import 'widgets/chat_tile.dart';
 import 'widgets/message_bubble.dart';
@@ -489,8 +491,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Future<void> _startCall(String media) async {
     try {
-      await ref.read(messagingRepositoryProvider).startCall(conversationId: widget.conversationId, media: media);
-      if (mounted) showMessage(context, '${media == 'video' ? 'Video' : 'Voice'} call started');
+      final mgr = ref.read(callManagerProvider.notifier);
+      await mgr.startCall(conversationId: widget.conversationId, media: media);
+      final callId = ref.read(callManagerProvider).session?.id;
+      if (mounted && callId != null) context.push('/calls/outgoing/$callId');
     } catch (e) {
       if (mounted) showMessage(context, friendlyError(e));
     }

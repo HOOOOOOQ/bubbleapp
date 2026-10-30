@@ -5,6 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../features/admin/admin_console_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/business/business_screens.dart';
+import '../features/calls/screens/active_call_screen.dart';
+import '../features/calls/screens/call_history_screen.dart';
+import '../features/calls/screens/call_settings_screen.dart';
+import '../features/calls/screens/incoming_call_screen.dart';
+import '../features/calls/screens/outgoing_call_screen.dart';
 import '../features/channels/channels_screens.dart';
 import '../features/home/home_shell.dart';
 import '../features/messaging/business_messaging_screen.dart';
@@ -78,6 +83,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/chats/new-group', builder: (context, state) => const NewGroupScreen()),
       GoRoute(path: '/chats/:id', builder: (context, state) => ConversationScreen(conversationId: state.pathParameters['id']!)),
       GoRoute(path: '/business/:bid/messaging', builder: (context, state) => BusinessMessagingScreen(businessId: state.pathParameters['bid']!)),
+      GoRoute(path: '/calls/history', builder: (context, state) => const CallHistoryScreen()),
+      GoRoute(path: '/calls/settings', builder: (context, state) => const CallSettingsScreen()),
+      GoRoute(path: '/calls/incoming/:id', builder: (context, state) => IncomingCallScreen(callId: state.pathParameters['id']!)),
+      GoRoute(path: '/calls/outgoing/:id', builder: (context, state) => OutgoingCallScreen(callId: state.pathParameters['id']!)),
+      GoRoute(path: '/calls/active/:id', builder: (context, state) => ActiveCallScreen(callId: state.pathParameters['id']!)),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page not found')),

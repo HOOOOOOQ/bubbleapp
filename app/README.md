@@ -20,6 +20,7 @@ RLS, RBAC, and SECURITY DEFINER RPCs decide everything.
 - Realtime & delivery: postgres_changes filtered by RLS, deduped, reconnection/background/multi-device;
   explicit delivered/read receipts (not inferred from insert); optimistic + idempotent queue via
   flutter_secure_storage (no SQLite primary).
+- Voice & Video Calls (Part 5): 1-1 voice/video, group voice/video (SFU-ready, mesh fallback), ringing/connecting/connected/reconnecting/ended, busy/missed/failed/timeout, WebRTC engine (flutter_webrtc) with STUN/TURN, secure signaling via Supabase Realtime + `call_signals` (5-min TTL), call history with hide/clear, chat header integration, incoming/outgoing/active screens, group grid + PIP, call settings, FCM stub, wakelock, background handling.
 
 ## Configuration
 

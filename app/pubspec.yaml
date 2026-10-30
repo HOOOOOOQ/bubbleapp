@@ -17,6 +17,12 @@ dependencies:
   url_launcher: ^6.3.0
   cached_network_image: ^3.3.1
   intl: ^0.19.0
+  flutter_webrtc: ^0.10.7
+  permission_handler: ^11.3.1
+  wakelock_plus: ^1.2.8
+  firebase_messaging: ^14.9.4
+  firebase_core: ^2.32.0
+  just_audio: ^0.9.40
 
 dev_dependencies:
   flutter_test:

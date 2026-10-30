@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.push-dispatch]
 verify_jwt = false
+
+[functions.turn-credentials]
+verify_jwt = true

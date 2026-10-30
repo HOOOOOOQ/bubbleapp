@@ -68,6 +68,9 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                   ]),
           ),
+          const SectionHeader('Calls'),
+          ListTile(leading: const Icon(Icons.call_outlined), title: const Text('Call history'), subtitle: const Text('Missed, incoming, outgoing'), onTap: () => context.push('/calls/history')),
+          ListTile(leading: const Icon(Icons.settings_phone_outlined), title: const Text('Call settings'), subtitle: const Text('Mic, camera, quality, notifications'), onTap: () => context.push('/calls/settings')),
           const SectionHeader('Account'),
           ListTile(
             leading: const Icon(Icons.verified_outlined),
