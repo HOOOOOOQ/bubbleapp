@@ -1,0 +1,23 @@
+# Secrets: never commit. Copy .env.example to a local file that is ignored.
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+key.properties
+service-account*.json
+*.p8
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# Flutter / Android build output
+app/.dart_tool/
+app/build/
+app/android/.gradle/
+app/android/local.properties
+
+# Node tooling used for local checks
+node_modules/

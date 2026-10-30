@@ -1,0 +1,10 @@
+# Flutter/Dart build output and local tooling
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+pubspec.lock.bak
