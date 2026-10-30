@@ -78,12 +78,14 @@ class BubbleRepository {
   Future<List<Map<String, dynamic>>> adminListUsers({
     String? query,
     String? status,
+    String? filter,
     int limit = 50,
     int offset = 0,
   }) async {
     final rows = await _client.rpc('admin_list_users', params: {
       'p_query': (query == null || query.trim().isEmpty) ? null : query.trim(),
       'p_status': status,
+      'p_filter': filter,
       'p_limit': limit,
       'p_offset': offset,
     });
@@ -548,6 +550,126 @@ class BubbleRepository {
   Future<OwnerStats> ownerStats() async {
     final data = await _client.rpc('owner_dashboard_stats');
     return OwnerStats.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<Map<String, dynamic>> ownerTimeseries({int days = 30}) async {
+    final data = await _client.rpc('owner_dashboard_timeseries', params: {'p_days': days});
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> ownerSystemHealth() async {
+    final data = await _client.rpc('owner_system_health');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> securityOverview() async {
+    final data = await _client.rpc('security_overview');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> adminGetUserDetail(String userId) async {
+    final data = await _client.rpc('admin_get_user_detail', params: {'p_user_id': userId});
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> adminListAdmins() async {
+    final rows = await _client.rpc('admin_list_admins');
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetAudit(String userId, {int limit = 50}) async {
+    final rows = await _client.rpc('admin_get_audit', params: {'p_user_id': userId, 'p_limit': limit});
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> adminCreateAdmin({required String userId, required String roleKey, List<String> permissions = const []}) =>
+      _client.rpc('admin_create_admin', params: {'p_user_id': userId, 'p_role_key': roleKey, 'p_permissions': permissions});
+
+  Future<void> adminSetPermission({required String userId, required String permission, required String mode}) =>
+      _client.rpc('admin_set_permission', params: {'p_user_id': userId, 'p_permission': permission, 'p_mode': mode});
+
+  Future<void> adminSetAdminStatus({required String userId, required String status, String? reason}) =>
+      _client.rpc('admin_set_admin_status', params: {'p_user_id': userId, 'p_status': status, 'p_reason': reason});
+
+  Future<void> adminIssueWarning({required String userId, required String reason}) =>
+      _client.rpc('admin_issue_warning', params: {'p_user_id': userId, 'p_reason': reason});
+
+  Future<void> adminRestrictFeature({required String userId, required String feature, required String reason, DateTime? expiresAt}) =>
+      _client.rpc('admin_restrict_feature', params: {'p_user_id': userId, 'p_feature': feature, 'p_reason': reason, 'p_expires_at': expiresAt?.toIso8601String()});
+
+  Future<void> adminRevokeSessions({required String userId, String? reason}) =>
+      _client.rpc('admin_revoke_sessions', params: {'p_user_id': userId, 'p_reason': reason});
+
+  Future<void> adminLiftRestriction(String restrictionId) =>
+      _client.rpc('admin_lift_restriction', params: {'p_restriction_id': restrictionId});
+
+  Future<void> adminEmergencySuspend({required String userId, required String reason}) =>
+      _client.rpc('admin_emergency_suspend', params: {'p_user_id': userId, 'p_reason': reason});
+
+  Future<void> ownerSetMaintenance({required bool enabled, String? announcement}) =>
+      _client.rpc('owner_set_maintenance', params: {'p_enabled': enabled, 'p_announcement': announcement});
+
+  Future<List<Map<String, dynamic>>> adminVerificationQueue({String? status}) async {
+    final rows = await _client.rpc('admin_verification_queue', params: {'p_status': status});
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> adminPartnerQueue({String? status}) async {
+    final rows = await _client.rpc('admin_partner_queue', params: {'p_status': status});
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> moderationAssign({required String reportId, required String assigneeId}) =>
+      _client.rpc('moderation_assign', params: {'p_report_id': reportId, 'p_assignee': assigneeId});
+
+  Future<void> moderationAddNote({required String reportId, required String note}) =>
+      _client.rpc('moderation_add_note', params: {'p_report_id': reportId, 'p_note': note});
+
+  Future<void> moderationSetPriority({required String reportId, required String priority}) =>
+      _client.rpc('moderation_set_priority', params: {'p_report_id': reportId, 'p_priority': priority});
+
+  Future<void> moderationEscalate({required String reportId, String? note}) =>
+      _client.rpc('moderation_escalate', params: {'p_report_id': reportId, 'p_note': note});
+
+  Future<Map<String, dynamic>> moderatorMetrics() async {
+    final data = await _client.rpc('moderator_metrics');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  // Platform settings
+  Future<List<Map<String, dynamic>>> platformSettings() async {
+    final rows = await _client.from('platform_settings').select().order('setting_key');
+    return rows.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> setPlatformSetting(String key, dynamic value) =>
+      _client.rpc('set_platform_setting', params: {'p_key': key, 'p_value': value});
+
+  // Announcements
+  Future<List<Map<String, dynamic>>> announcements() async {
+    final rows = await _client.from('announcements').select().order('created_at', ascending: false);
+    return rows.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> createAnnouncement({required String title, required String body, required String audience, required String type, String status = 'draft', DateTime? publishAt}) =>
+      _client.from('announcements').insert({'title': title, 'body': body, 'audience': audience, 'type': type, 'status': status, 'publish_at': publishAt?.toIso8601String()});
+
+  Future<void> publishAnnouncement(String id) => _client.rpc('publish_announcement', params: {'p_id': id});
+
+  // User warnings / restrictions
+  Future<List<Map<String, dynamic>>> userWarnings(String userId) async {
+    final rows = await _client.from('user_warnings').select().eq('user_id', userId).order('created_at', ascending: false);
+    return rows.cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> userRestrictions(String userId) async {
+    final rows = await _client.from('user_restrictions').select().eq('user_id', userId).order('created_at', ascending: false);
+    return rows.cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> securityEvents(String userId) async {
+    final rows = await _client.from('security_events').select().eq('user_id', userId).order('created_at', ascending: false).limit(50);
+    return rows.cast<Map<String, dynamic>>();
   }
 
   Future<List<Map<String, dynamic>>> adminAuditLog({int limit = 100}) async {

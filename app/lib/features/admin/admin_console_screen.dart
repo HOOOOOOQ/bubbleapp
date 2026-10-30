@@ -57,6 +57,7 @@ class _UsersTab extends ConsumerStatefulWidget {
 class _UsersTabState extends ConsumerState<_UsersTab> {
   final _query = TextEditingController();
   String? _status;
+  String? _filter;
   late Future<List<Map<String, dynamic>>> _future;
 
   @override
@@ -74,6 +75,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
   Future<List<Map<String, dynamic>>> _load() => ref.read(repositoryProvider).adminListUsers(
         query: _query.text,
         status: _status,
+        filter: _filter,
       );
 
   void _reload() => setState(() => _future = _load());
@@ -85,29 +87,50 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
       children: [
         Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _query,
-                decoration: const InputDecoration(labelText: 'Search username, name or email'),
-                onSubmitted: (_) => _reload(),
+          child: Column(children: [
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _query,
+                  decoration: const InputDecoration(labelText: 'Search username, name or email'),
+                  onSubmitted: (_) => _reload(),
+                ),
               ),
+              const SizedBox(width: 8),
+              IconButton(onPressed: _reload, icon: const Icon(Icons.search)),
+            ]),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                DropdownButton<String?>(
+                  value: _status,
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Any status')),
+                    DropdownMenuItem(value: 'active', child: Text('Active')),
+                    DropdownMenuItem(value: 'suspended', child: Text('Suspended')),
+                    DropdownMenuItem(value: 'banned', child: Text('Banned')),
+                    DropdownMenuItem(value: 'restricted', child: Text('Restricted')),
+                  ],
+                  onChanged: (v) { _status = v; _reload(); },
+                ),
+                const SizedBox(width: 12),
+                DropdownButton<String?>(
+                  value: _filter,
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('All users')),
+                    DropdownMenuItem(value: 'verified', child: Text('Verified')),
+                    DropdownMenuItem(value: 'partners', child: Text('Partners')),
+                    DropdownMenuItem(value: 'business', child: Text('Business')),
+                    DropdownMenuItem(value: 'suspended', child: Text('Suspended')),
+                    DropdownMenuItem(value: 'restricted', child: Text('Restricted')),
+                    DropdownMenuItem(value: 'new', child: Text('New (7d)')),
+                    DropdownMenuItem(value: 'administrators', child: Text('Administrators')),
+                  ],
+                  onChanged: (v) { _filter = v; _reload(); },
+                ),
+              ]),
             ),
-            const SizedBox(width: 8),
-            DropdownButton<String?>(
-              value: _status,
-              items: const [
-                DropdownMenuItem(value: null, child: Text('Any status')),
-                DropdownMenuItem(value: 'active', child: Text('Active')),
-                DropdownMenuItem(value: 'suspended', child: Text('Suspended')),
-                DropdownMenuItem(value: 'banned', child: Text('Banned')),
-              ],
-              onChanged: (v) {
-                _status = v;
-                _reload();
-              },
-            ),
-            IconButton(onPressed: _reload, icon: const Icon(Icons.search)),
           ]),
         ),
         Expanded(
@@ -127,29 +150,36 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
                   final id = u['id'] as String;
                   final status = (u['account_status'] ?? 'active') as String;
                   final roles = ((u['roles'] as List?) ?? const []).join(', ');
+                  final badges = (u['badges'] as List?)?.join(', ') ?? '';
+                  final partnerStatus = u['partner_status'];
+                  final isBusiness = u['is_business'] == true;
                   return GlassCard(
+                    onTap: () => _showProfile(id),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        Expanded(child: Text('${u['display_name'] ?? ''} · @${u['username'] ?? ''}',
-                            style: const TextStyle(fontWeight: FontWeight.w700))),
+                        Expanded(child: Text('${u['display_name'] ?? ''} · @${u['username'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700))),
+                        if (badges.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 6), child: StatusBadge(label: badges, color: Colors.blue)),
                         StatusBadge(label: status, color: status == 'active' ? Colors.green : Colors.red),
                       ]),
-                      Text('${u['email'] ?? ''}'),
+                      Text('${u['email'] ?? ''}', style: Theme.of(context).textTheme.bodySmall),
                       if (roles.isNotEmpty) Text('Roles: $roles', style: Theme.of(context).textTheme.bodySmall),
-                      if (access.can('users.manage')) ...[
-                        const SizedBox(height: 8),
-                        Wrap(spacing: 8, children: [
-                          if (status != 'suspended')
-                            OutlinedButton(
-                                onPressed: () => _setStatus(context, id, 'suspended'), child: const Text('Suspend')),
-                          if (status != 'banned')
-                            OutlinedButton(
-                                onPressed: () => _setStatus(context, id, 'banned'), child: const Text('Ban')),
-                          if (status != 'active')
-                            FilledButton(
-                                onPressed: () => _setStatus(context, id, 'active'), child: const Text('Restore')),
-                        ]),
-                      ],
+                      if (isBusiness) Text('Business account', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.indigo)),
+                      if (partnerStatus != null) Text('Partner: $partnerStatus', style: Theme.of(context).textTheme.bodySmall),
+                      if (u['business_label'] != null) Text('Label: ${u['business_label']}', style: Theme.of(context).textTheme.bodySmall),
+                      Text('Joined: ${(u['created_at'] as String?)?.substring(0,10) ?? ''} • Last seen: ${(u['last_seen_at'] as String?)?.substring(0,16) ?? 'never'}', style: Theme.of(context).textTheme.labelSmall),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        OutlinedButton(onPressed: () => _showProfile(id), child: const Text('View profile')),
+                        if (access.can('users.manage')) ...[
+                          if (status != 'suspended') OutlinedButton(onPressed: () => _setStatus(context, id, 'suspended'), child: const Text('Suspend')),
+                          if (status != 'banned') OutlinedButton(onPressed: () => _setStatus(context, id, 'banned'), child: const Text('Ban')),
+                          if (status != 'active') FilledButton(onPressed: () => _setStatus(context, id, 'active'), child: const Text('Restore')),
+                          if (access.can('users.warn')) OutlinedButton(onPressed: () => _warnUser(id), child: const Text('Warn')),
+                          if (access.can('users.restrict')) OutlinedButton(onPressed: () => _restrictUser(id), child: const Text('Restrict')),
+                          if (access.can('users.sessions_revoke')) OutlinedButton(onPressed: () => _revoke(id), child: const Text('Revoke sessions')),
+                        ],
+                        OutlinedButton(onPressed: () => _showUserAudit(id), child: const Text('History')),
+                      ]),
                     ]),
                   );
                 },
@@ -167,12 +197,52 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
       reason = await promptText(context, title: 'Reason', label: 'Reason (required)', mandatory: true);
       if (reason == null || reason.isEmpty || !context.mounted) return;
     }
-    final ok = await runAction(
-      context,
-      () => ref.read(repositoryProvider).adminSetAccountStatus(userId: userId, status: status, reason: reason),
-      success: 'Account status updated',
-    );
+    final ok = await runAction(context, () => ref.read(repositoryProvider).adminSetAccountStatus(userId: userId, status: status, reason: reason), success: 'Account status updated');
     if (ok) _reload();
+  }
+
+  Future<void> _warnUser(String userId) async {
+    final reason = await promptText(context, title: 'Issue warning', label: 'Reason', mandatory: true);
+    if (reason == null || reason.isEmpty) return;
+    final ok = await runAction(context, () => ref.read(repositoryProvider).adminIssueWarning(userId: userId, reason: reason), success: 'Warning issued');
+    if (ok && mounted) showMessage(context, 'Warning recorded');
+  }
+
+  Future<void> _restrictUser(String userId) async {
+    final feature = await promptText(context, title: 'Restrict feature', label: 'Feature key (e.g. messaging, stories, posting)');
+    if (feature == null || feature.trim().isEmpty) return;
+    final reason = await promptText(context, title: 'Reason', label: 'Reason');
+    final ok = await runAction(context, () => ref.read(repositoryProvider).adminRestrictFeature(userId: userId, feature: feature.trim(), reason: reason), success: 'Feature restricted');
+    if (ok && mounted) showMessage(context, 'Restriction applied');
+  }
+
+  Future<void> _revoke(String userId) async {
+    final reason = await promptText(context, title: 'Revoke sessions', label: 'Reason');
+    final ok = await runAction(context, () => ref.read(repositoryProvider).adminRevokeSessions(userId: userId, reason: reason), success: 'Sessions revoked');
+    if (ok && mounted) showMessage(context, 'Sessions revoked');
+  }
+
+  Future<void> _showProfile(String userId) async {
+    final d = await ref.read(repositoryProvider).adminGetUserDetail(userId);
+    if (!mounted) return;
+    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (ctx) => DraggableScrollableSheet(expand: false, initialChildSize: 0.75, builder: (ctx, ctrl) => ListView(padding: const EdgeInsets.all(16), controller: ctrl, children: [
+              Text('${d['display_name']} @${d['username']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 6),
+              Text('Email: ${d['email']} • Status: ${d['account_status']} • Business: ${d['is_business']}', style: Theme.of(context).textTheme.bodySmall),
+              if (d['badges'] != null) Text('Badges: ${(d['badges'] as List).join(', ')}'),
+              if (d['partner_status'] != null) Text('Partner: ${d['partner_status']}'),
+              const Divider(height: 20),
+              Text('Warnings: ${(d['warnings'] as List).length} • Restrictions: ${(d['restrictions'] as List).length} • Moderation history: ${(d['moderation_history'] as List).length}', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 8),
+              if ((d['warnings'] as List).isNotEmpty) ...[const Text('Warnings:', style: TextStyle(fontWeight: FontWeight.w700)), for (final w in (d['warnings'] as List).take(5)) ListTile(title: Text('${w['reason']}', style: const TextStyle(fontSize: 13)), subtitle: Text('${w['created_at']}'))],
+              if ((d['restrictions'] as List).isNotEmpty) ...[const Text('Restrictions:', style: TextStyle(fontWeight: FontWeight.w700)), for (final r in (d['restrictions'] as List).take(5)) ListTile(title: Text('${r['feature_key']}'), subtitle: Text('${r['reason'] ?? ''} — ${r['is_active'] ? 'active' : 'lifted'}'))],
+            ])));
+  }
+
+  Future<void> _showUserAudit(String userId) async {
+    final rows = await ref.read(repositoryProvider).adminGetAudit(userId);
+    if (!mounted) return;
+    showModalBottomSheet(context: context, builder: (ctx) => ListView(padding: const EdgeInsets.all(16), children: [const Text('User audit', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8), if (rows.isEmpty) const Text('No entries') else for (final r in rows.take(20)) ListTile(title: Text(r['action'] ?? ''), subtitle: Text('${r['created_at']}'))]));
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/admin/admin_console_screen.dart';
+import '../features/admin/admin_dashboard_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/business/business_screens.dart';
 import '../features/calls/screens/active_call_screen.dart';
@@ -27,6 +28,12 @@ import '../features/messaging/new_chat_screen.dart';
 import '../features/messaging/search_screen.dart';
 import '../features/moderation/screens/report_screen.dart';
 import '../features/owner/owner_dashboard_screen.dart';
+import '../features/owner/admin_management_screen.dart';
+import '../features/owner/platform_settings_screen.dart';
+import '../features/owner/security_center_screen.dart';
+import '../features/owner/audit_log_screen.dart';
+import '../features/owner/owner_control_center_screen.dart';
+import '../features/moderation/moderation_center_screen.dart';
 import '../features/partners/partners_screens.dart';
 import '../features/settings/settings_screens.dart';
 import '../features/stories/screens/story_editor_screen.dart';
@@ -90,7 +97,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/settings/profile', builder: (context, state) => const ProfileEditScreen()),
       GoRoute(path: '/owner', builder: (context, state) => const OwnerDashboardScreen()),
+      GoRoute(path: '/owner/control', builder: (context, state) => const OwnerControlCenterScreen()),
+      GoRoute(path: '/owner/admins', builder: (context, state) => const AdminManagementScreen()),
+      GoRoute(path: '/owner/settings', builder: (context, state) => const PlatformSettingsScreen()),
+      GoRoute(path: '/owner/security', builder: (context, state) => const SecurityCenterScreen()),
+      GoRoute(path: '/owner/audit', builder: (context, state) => const AuditLogScreen()),
+      GoRoute(path: '/admin/dashboard', builder: (context, state) => const AdminDashboardScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminConsoleScreen()),
+      GoRoute(path: '/admin/verification', builder: (context, state) => const VerificationQueueScreen()),
+      GoRoute(path: '/admin/partners', builder: (context, state) => const PartnersQueueScreen()),
+      GoRoute(path: '/admin/moderation', builder: (context, state) => const ModerationCenterScreen()),
+      GoRoute(path: '/admin/announcements', builder: (context, state) => const OfficialChannelScreen()),
       GoRoute(path: '/chats/search', builder: (context, state) => const SearchScreen()),
       GoRoute(path: '/chats/new', builder: (context, state) => const NewChatScreen()),
       GoRoute(path: '/chats/new-group', builder: (context, state) => const NewGroupScreen()),
