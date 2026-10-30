@@ -260,7 +260,7 @@ class BubbleRepository {
     return id.toString();
   }
 
-  /// Uploads to the private `verification-docs` bucket at {uid}/{applicationId}/{file}
+  /// Uploads to the private `verification-documents` bucket at {uid}/{applicationId}/{file}
   /// and registers the document. Nothing is public; staff read via signed URLs only.
   Future<void> uploadVerificationDocument({
     required String applicationId,
@@ -273,7 +273,7 @@ class BubbleRepository {
     if (uid == null) throw StateError('Not signed in');
     final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     final path = '$uid/$applicationId/${DateTime.now().millisecondsSinceEpoch}_$safeName';
-    await _client.storage.from('verification-docs').uploadBinary(
+    await _client.storage.from('verification-documents').uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: mimeType, upsert: false),
@@ -298,7 +298,7 @@ class BubbleRepository {
 
   /// Short-lived link for staff or the applicant to view a private document.
   Future<String> signedDocumentUrl(String storagePath) =>
-      _client.storage.from('verification-docs').createSignedUrl(storagePath, 300);
+      _client.storage.from('verification-documents').createSignedUrl(storagePath, 300);
 
   Future<List<VerificationApplication>> verificationQueue({String? type, String? status}) async {
     final rows = await _client.rpc('list_verification_queue', params: {
@@ -316,12 +316,17 @@ class BubbleRepository {
     required String action,
     String? note,
   }) async {
-    final status = await _client.rpc('review_verification_application', params: {
-      'p_application_id': applicationId,
-      'p_action': action,
-      'p_note': note,
+    // Decisions go through the verification-decision Edge Function, which forwards the caller's
+    // JWT to review_verification_application. The database checks the reviewer's permission and
+    // writes verification_history and the audit log in the same transaction.
+    final response = await _client.functions.invoke('verification-decision', body: {
+      'application_id': applicationId,
+      'action': action,
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
     });
-    return status.toString();
+    final data = response.data;
+    if (data is Map && data['result'] != null) return data['result'].toString();
+    return '';
   }
 
   // ---------------------------------------------------------------- partners

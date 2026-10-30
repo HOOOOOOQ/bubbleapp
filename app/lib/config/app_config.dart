@@ -20,5 +20,5 @@ class AppConfig {
   static const String officialChannelUsername = 'bubbleapp';
 
   /// Storage bucket for verification documents (private; accessed through RLS).
-  static const String verificationBucket = 'verification-docs';
+  static const String verificationBucket = 'verification-documents';
 }

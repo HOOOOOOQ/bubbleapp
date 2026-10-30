@@ -197,64 +197,112 @@ revoke execute on function public.reject_audit_mutation() from authenticated;
 revoke execute on function public.guard_owner_role() from authenticated;
 
 -- ---------------------------------------------------------------------------
--- Storage buckets (verification-docs is PRIVATE; accessed via signed URLs only)
+-- Storage buckets. Limits and MIME allow-lists are enforced by Supabase Storage.
+-- Private buckets are read only through signed URLs issued to authorised users.
 -- ---------------------------------------------------------------------------
-insert into storage.buckets (id, name, public, file_size_limit) values
-  ('avatars',           'avatars',           true,  5242880),
-  ('channel-media',     'channel-media',     false, 104857600),
-  ('chat-media',        'chat-media',        false, 104857600),
-  ('story-media',       'story-media',       false, 104857600),
-  ('verification-docs', 'verification-docs', false, 20971520)
-on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('avatars',              'avatars',              true,  5242880,
+     array['image/jpeg','image/png','image/webp']),
+  ('profile-covers',       'profile-covers',       true,  10485760,
+     array['image/jpeg','image/png','image/webp']),
+  ('business-media',       'business-media',       true,  20971520,
+     array['image/jpeg','image/png','image/webp','video/mp4']),
+  ('chat-media',           'chat-media',           false, 104857600,
+     array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','audio/mp4','audio/aac','audio/ogg','audio/mpeg','audio/wav','application/octet-stream']),
+  ('chat-attachments',     'chat-attachments',     false, 104857600,
+     array['application/pdf','application/zip','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']),
+  ('story-media',          'story-media',          false, 104857600,
+     array['image/jpeg','image/png','image/webp','video/mp4']),
+  ('channel-media',        'channel-media',        false, 104857600,
+     array['image/jpeg','image/png','image/webp','video/mp4','application/pdf']),
+  ('verification-documents','verification-documents', false, 20971520,
+     array['image/jpeg','image/png','application/pdf']),
+  ('wallpapers',           'wallpapers',           false, 10485760,
+     array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
--- avatars: public read, write to own folder {uid}/...
-drop policy if exists bubble_avatars_read on storage.objects;
-drop policy if exists bubble_avatars_write on storage.objects;
-create policy bubble_avatars_read on storage.objects for select to anon, authenticated
-  using (bucket_id = 'avatars');
-create policy bubble_avatars_write on storage.objects for insert to authenticated
-  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+-- Remove the earlier bucket name if a previous draft created it (no production data exists for it).
+delete from storage.buckets where id = 'verification-docs'
+  and not exists (select 1 from storage.objects where bucket_id = 'verification-docs');
 
--- verification-docs: owner uploads to {uid}/{application_id}/..., reviewers with permission read.
-drop policy if exists bubble_verification_upload on storage.objects;
-drop policy if exists bubble_verification_read on storage.objects;
-create policy bubble_verification_upload on storage.objects for insert to authenticated
-  with check (bucket_id = 'verification-docs' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy bubble_verification_read on storage.objects for select to authenticated
-  using (
-    bucket_id = 'verification-docs' and (
-      (storage.foldername(name))[1] = auth.uid()::text
-      or public.has_permission('users.verify')
-      or public.has_permission('channels.verify')
-    )
-  );
+-- Helper: folder segment as uuid, or null when it is not a valid uuid (never raises).
+create or replace function public.storage_folder_uuid(p_name text)
+returns uuid
+language plpgsql
+immutable
+set search_path = public
+as $$
+declare
+  v_seg text := (string_to_array(p_name, '/'))[1];
+begin
+  return v_seg::uuid;
+exception when invalid_text_representation then
+  return null;
+end;
+$$;
+revoke execute on function public.storage_folder_uuid(text) from public, anon;
+grant execute on function public.storage_folder_uuid(text) to authenticated;
 
--- chat-media: {conversation_id}/{uuid}/file, members only
-drop policy if exists bubble_chat_media_read on storage.objects;
-drop policy if exists bubble_chat_media_write on storage.objects;
+-- Drops every policy previously created on storage.objects for BubbleApp buckets.
+do $$
+declare
+  r record;
+begin
+  for r in select policyname from pg_policies
+            where schemaname = 'storage' and tablename = 'objects'
+              and policyname like 'bubble_%'
+  loop
+    execute format('drop policy if exists %I on storage.objects', r.policyname);
+  end loop;
+end $$;
+
+-- avatars / profile-covers: public read; write only inside the owner's {uid}/ folder.
+create policy bubble_public_media_read on storage.objects for select to anon, authenticated
+  using (bucket_id in ('avatars', 'profile-covers', 'business-media'));
+create policy bubble_profile_media_write on storage.objects for insert to authenticated
+  with check (bucket_id in ('avatars', 'profile-covers')
+              and (storage.foldername(name))[1] = auth.uid()::text);
+create policy bubble_profile_media_delete on storage.objects for delete to authenticated
+  using (bucket_id in ('avatars', 'profile-covers')
+         and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- business-media: {business_id}/... ; managers of the business write, anyone reads.
+create policy bubble_business_media_write on storage.objects for insert to authenticated
+  with check (bucket_id = 'business-media'
+              and public.is_business_member(public.storage_folder_uuid(name), array['owner','manager']));
+create policy bubble_business_media_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'business-media'
+         and public.is_business_member(public.storage_folder_uuid(name), array['owner','manager']));
+
+-- wallpapers: private, {uid}/... only.
+create policy bubble_wallpapers_all on storage.objects for all to authenticated
+  using (bucket_id = 'wallpapers' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'wallpapers' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- chat-media / chat-attachments: {conversation_id}/... ; conversation members only.
 create policy bubble_chat_media_read on storage.objects for select to authenticated
-  using (bucket_id = 'chat-media'
-         and public.is_conversation_member(((storage.foldername(name))[1])::uuid));
+  using (bucket_id in ('chat-media', 'chat-attachments')
+         and public.is_conversation_member(public.storage_folder_uuid(name)));
 create policy bubble_chat_media_write on storage.objects for insert to authenticated
-  with check (bucket_id = 'chat-media'
-         and public.is_conversation_member(((storage.foldername(name))[1])::uuid));
+  with check (bucket_id in ('chat-media', 'chat-attachments')
+              and public.is_conversation_member(public.storage_folder_uuid(name)));
 
--- channel-media: {channel_id}/{uuid}/file, managers write; public or subscribers read
-drop policy if exists bubble_channel_media_read on storage.objects;
-drop policy if exists bubble_channel_media_write on storage.objects;
+-- channel-media: {channel_id}/... ; channel managers write; public or subscribers read.
 create policy bubble_channel_media_read on storage.objects for select to authenticated
   using (bucket_id = 'channel-media' and (
-    public.can_manage_channel(((storage.foldername(name))[1])::uuid)
-    or public.is_active_subscriber(((storage.foldername(name))[1])::uuid)
-    or exists (select 1 from public.channels c where c.id = ((storage.foldername(name))[1])::uuid and c.is_public)
+    public.can_manage_channel(public.storage_folder_uuid(name))
+    or public.is_active_subscriber(public.storage_folder_uuid(name))
+    or exists (select 1 from public.channels c
+               where c.id = public.storage_folder_uuid(name) and c.is_public)
   ));
 create policy bubble_channel_media_write on storage.objects for insert to authenticated
   with check (bucket_id = 'channel-media'
-         and public.can_manage_channel(((storage.foldername(name))[1])::uuid));
+              and public.can_manage_channel(public.storage_folder_uuid(name)));
 
--- story-media: {author_uid}/{uuid}/file, author writes; viewers read via can_view_story
-drop policy if exists bubble_story_media_read on storage.objects;
-drop policy if exists bubble_story_media_write on storage.objects;
+-- story-media: {author_uid}/... ; author writes; viewers read through can_view_story.
 create policy bubble_story_media_read on storage.objects for select to authenticated
   using (bucket_id = 'story-media' and (
     (storage.foldername(name))[1] = auth.uid()::text
@@ -264,6 +312,17 @@ create policy bubble_story_media_read on storage.objects for select to authentic
 create policy bubble_story_media_write on storage.objects for insert to authenticated
   with check (bucket_id = 'story-media' and (storage.foldername(name))[1] = auth.uid()::text);
 
+-- verification-documents: PRIVATE. {uid}/{application_id}/... Applicant uploads and reads own files;
+-- reviewers with the review permission read. Never public.
+create policy bubble_verification_upload on storage.objects for insert to authenticated
+  with check (bucket_id = 'verification-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy bubble_verification_read on storage.objects for select to authenticated
+  using (bucket_id = 'verification-documents' and (
+    (storage.foldername(name))[1] = auth.uid()::text
+    or public.has_permission('users.verify')
+    or public.has_permission('channels.verify')
+  ));
+
 -- ---------------------------------------------------------------------------
 -- Realtime (Postgres Changes). RLS applies to every subscriber.
 -- ---------------------------------------------------------------------------
@@ -272,7 +331,8 @@ declare
   t text;
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-    foreach t in array array['messages', 'message_receipts', 'conversation_members', 'channel_posts',
+    foreach t in array array['messages', 'message_receipts', 'message_reactions', 'conversations',
+                             'conversation_members', 'channel_posts', 'channel_post_reactions',
                              'channel_subscribers', 'verification_applications', 'partner_applications',
                              'notifications']
     loop

@@ -142,7 +142,7 @@ select tst.ok((select last_seen_at from public.profiles where id = '00000000-000
 select tst.as_trusted();
 select tst.ok(exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'messages'), 'messages are published for realtime');
 select tst.ok(exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'channel_posts'), 'channel posts are published for realtime');
-select tst.ok(exists (select 1 from storage.buckets where id = 'verification-docs' and public = false), 'verification documents use a private bucket');
+select tst.ok(exists (select 1 from storage.buckets where id = 'verification-documents' and public = false), 'verification documents use a private bucket');
 select tst.ok(exists (select 1 from storage.buckets where id = 'chat-media' and public = false), 'chat media is private');
 select tst.ok(not has_function_privilege('authenticated', 'public.guard_mandatory_subscription()', 'EXECUTE'), 'trigger functions are not callable through the API');
 select tst.ok(not has_function_privilege('authenticated', 'public.write_audit(text,text,text,jsonb)', 'EXECUTE'), 'audit writer is not callable through the API');

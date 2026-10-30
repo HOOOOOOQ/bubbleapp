@@ -1,105 +1,51 @@
-# BubbleApp client (Flutter)
+# BubbleApp Flutter client
 
-Material 3 · Riverpod 2 · GoRouter 14 · supabase_flutter 2.x
+Flutter (Material 3), Riverpod, and GoRouter, backed by Supabase. The client holds no privileges:
+RLS, RBAC, and SECURITY DEFINER RPCs decide everything.
 
-> **Status: uncompiled.** The sandbox used to write this code could not download the Flutter or
-> Dart SDK or reach pub.dev, so these sources have **not been compiled, analysed or run**.
-> Expect to fix a small number of compile/analyzer errors on first build. Run the steps below first.
+## Status (read first)
 
-## 1. Prerequisites
+- **Not compiled or tested in the build environment that produced this repository.** The Flutter and
+  Dart SDKs, Java, and the Android SDK were not available, and pub.dev was unreachable. The code was
+  checked only with a Dart parser (all 23 files parse). `flutter pub get`, `flutter analyze`,
+  `flutter test`, and `flutter build apk` have **not** been run.
+- The dependency list in `pubspec.yaml` is the set the existing code uses. Features that need more
+  packages (voice and video calls, FCM client registration, media playback, camera and recording) are
+  not implemented, so their packages are not listed.
+- Implemented screens (routes in `lib/router/app_router.dart`): sign in (Email OTP), home shell,
+  channels list, official @BubbleApp channel, channel detail, create channel, verification home, apply
+  for verification, verification queue, partners home, partner apply, partner queue, business home,
+  create business, business dashboard, settings, profile edit, owner dashboard, admin console.
+- **Not implemented:** the messaging client. There is no chat list or conversation thread screen, and
+  no send, edit, delete, reply, forward, reaction, read-receipt, typing, offline-queue, or realtime code
+  in the repository. The database side of messaging (migrations 006 and 009) is in place and tested.
+  Most of the planned 112-page catalogue is also not built. Screens were not created as empty placeholders.
 
-- Flutter **3.27 or newer** (the theme uses `CardThemeData` and `Color.withValues`).
-- A Supabase project with migrations `supabase/migrations/20261030000001…08` applied in order.
+## Configuration
 
-## 2. Create the platform folders (once)
+Values are injected at build time with `--dart-define`. Nothing is hard-coded.
 
-This repository contains only `lib/`, `test/` and `pubspec.yaml`. Generate the native folders:
-
-```bash
-cd app
-flutter create . --platforms=android,ios,web --project-name bubbleapp --org app.bubble
+```
 flutter pub get
-```
-
-`flutter create .` keeps existing files; if it asks to overwrite `pubspec.yaml`, keep yours.
-
-## 3. Configure Supabase (no secrets in code)
-
-Pass the **project URL** and **anon key** at build/run time. Never embed the `service_role` key.
-
-```bash
 flutter run \
-  --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=<anon-public-key>
+  --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_OR_PUBLISHABLE_KEY
 ```
 
-Without both values the app shows a configuration screen instead of running against a fake backend.
+If either value is missing, `AppConfig.isConfigured` is false and the app shows a configuration screen
+instead of attempting sign-in. Never use the service-role key here.
 
-In the Supabase dashboard:
+Auth sessions are kept in `flutter_secure_storage` through `SecureSessionStorage`.
 
-- **Authentication → Providers → Email**: enable email; enable OTP sign-in.
-- **Authentication → Email templates → Magic Link / OTP**: include `{{ .Token }}` so users receive a
-  6-digit code (the app verifies a code, not a link).
-- Leave public sign-ups on, or restrict them as you prefer; accounts are created on first OTP sign-in.
+## Tests
 
-## 4. Create the Owner (trusted server-side only)
+Unit tests exist for config, error mapping, and models (`test/`). They have not been executed. The
+planned Flutter widget and integration tests (auth, OTP, chat list, reactions, uploads, verification,
+subscription, partner dashboard, owner and admin permissions, theme, and navigation) are not written.
+Critical database workflows are covered by the SQL suites in `supabase/tests/` (run `scripts/test_db.sh`).
 
-The client cannot create or transfer ownership. After the future Owner signs in once with email OTP,
-run this **in a trusted server context** (SQL editor with the service role, or a server job):
+## Verification uploads
 
-```sql
-select public.bootstrap_owner('owner@example.com');
-```
-
-It succeeds once; a second call is refused. Admins are then created with `admin_create_admin` by the Owner.
-
-## 5. Run the tests
-
-```bash
-flutter test
-```
-
-The unit tests cover model parsing (including that `email` is never read), permission gating data,
-error message mapping, and configuration defaults. Database behaviour is covered by the SQL suite
-in `../scripts/test_db.sh`.
-
-## 6. Feature map and what is **not** built yet
-
-Built (routed, wired to the backend):
-
-| Area | Screens |
-| --- | --- |
-| Auth | Email OTP sign-in (`features/auth`) |
-| Home hub | Profile card, username prompt, official channel card, mandatory subscription sync, staff shortcuts (`features/home`) |
-| Channels | Browse, join/leave, invite codes, create, delete, official channel page, posts, pin, view counts, channel stats (`features/channels`) |
-| Verification | Apply (user, organization, business, channel), track status, upload private documents, staff queue with permission- and status-gated actions (`features/verification`) |
-| Partners | Apply, status dashboard, announcements, staff queue (`features/partners`) |
-| Business | Create, dashboard, account-mode switch, apply for verification (`features/business`) |
-| Settings | Edit profile, notifications, sign out (`features/settings`) |
-| Owner | Platform metrics, owner and admin audit logs (`features/owner`) |
-| Admin console | Users (search, suspend/ban/restore), reports (dismiss, warn, hide, suspend, escalate), platform announcements, audit log (`features/admin`) |
-
-Database-backed but without UI yet (repository methods exist in `lib/data/bubble_repository.dart`):
-
-- Direct voice/video calls (`startCall`, `answerCall`, `declineCall`, `endCall`, `myCalls`).
-- Message pin and star (`setMessagePinned`, `starMessage`, `unstarMessage`).
-- Security events feed (`mySecurityEvents`).
-
-Not built (the originally planned ~112 pages are **not** delivered):
-
-- Direct and group **messaging UI** (the database tables and functions exist; the chat screens do not).
-- Call screens, incoming-call UI, and FCM push delivery (notification rows are created; push is not wired).
-- Typing indicators and realtime subscriptions (planned via Supabase Realtime broadcast; not implemented).
-- Stories, communities, contacts, blocking UI, and comments on channel posts.
-- Business catalog, quick replies and operator management screens.
-- Premium purchase/entitlement screens (the `premium_subscriptions` table exists; there is no billing).
-- Admin management UI (promote/demote admins, per-admin permission grants), role grant UI, platform
-  settings editor, partner-resources page.
-- Theme and privacy switches in Settings (the `user_settings` table supports them).
-- Chat media and avatar upload UI (storage buckets and policies exist).
-
-Known limitations:
-
-- Verification documents accept **JPEG and PNG images** picked from the gallery (no PDF picker yet).
-- `last_seen_at` is readable by any signed-in user and does not yet respect the privacy setting.
-- The partner announcement permission is taken from the database function; check it matches your intent.
+Documents go to the private `verification-documents` bucket under `{uid}/{application_id}/`. The app
+never receives a public URL. It asks the `signed-document-url` function for a five-minute signed URL.
+Decisions go through the `verification-decision` function.
