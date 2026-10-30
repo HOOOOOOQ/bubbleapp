@@ -7,7 +7,7 @@ import '../../models/models.dart';
 import '../../state/providers.dart';
 import '../../widgets/common.dart';
 
-const _tabs = ['/home', '/channels', '/business', '/settings'];
+const _tabs = ['/home', '/chats', '/channels', '/business', '/settings'];
 
 /// Bottom navigation shell for the four primary destinations.
 class HomeShell extends StatelessWidget {
@@ -27,6 +27,7 @@ class HomeShell extends StatelessWidget {
         onDestinationSelected: (i) => context.go(_tabs[i]),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Chats'),
           NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'Channels'),
           NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Business'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),

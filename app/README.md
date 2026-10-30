@@ -5,21 +5,21 @@ RLS, RBAC, and SECURITY DEFINER RPCs decide everything.
 
 ## Status (read first)
 
-- **Not compiled or tested in the build environment that produced this repository.** The Flutter and
-  Dart SDKs, Java, and the Android SDK were not available, and pub.dev was unreachable. The code was
-  checked only with a Dart parser (all 23 files parse). `flutter pub get`, `flutter analyze`,
-  `flutter test`, and `flutter build apk` have **not** been run.
-- The dependency list in `pubspec.yaml` is the set the existing code uses. Features that need more
-  packages (voice and video calls, FCM client registration, media playback, camera and recording) are
-  not implemented, so their packages are not listed.
-- Implemented screens (routes in `lib/router/app_router.dart`): sign in (Email OTP), home shell,
-  channels list, official @BubbleApp channel, channel detail, create channel, verification home, apply
-  for verification, verification queue, partners home, partner apply, partner queue, business home,
-  create business, business dashboard, settings, profile edit, owner dashboard, admin console.
-- **Not implemented:** the messaging client. There is no chat list or conversation thread screen, and
-  no send, edit, delete, reply, forward, reaction, read-receipt, typing, offline-queue, or realtime code
-  in the repository. The database side of messaging (migrations 006 and 009) is in place and tested.
-  Most of the planned 112-page catalogue is also not built. Screens were not created as empty placeholders.
+- **Not compiled here** (no Flutter/Dart SDK, pub.dev blocked). 38 lib files pass Node parser; 6 test
+  files cover messaging, delivery, offline dedup, realtime. `flutter analyze` / `test` / `build` not run
+  — storage.googleapis.com is unreachable in this environment.
+- All 11 migrations (292 assertions) and 14 Edge Functions from prior phases are preserved untouched.
+- Screens (routes in `lib/router/app_router.dart`): sign-in (OTP), home shell with Chats tab, chat list
+  (search, unread/pinned/archived/muted, swipe pin/archive, folders), conversation (iOS header, bubbles
+  with ticks, date/unread separators, typing, reply/edit/delete/forward/copy/pin/star/react/report,
+  multi-select, system), new chat/group, search (users/chats/messages/channels + in-chat), business
+  messaging (labels, quick replies, welcome/away), plus prior screens (channels, official, verification,
+  partners, business, settings, profile, owner, admin).
+- Media & voice: chat-media / chat-attachments buckets with signed URLs, size/MIME guards, progress
+  contract; voice recorder (record/pause/resume/cancel/send, waveform, playback).
+- Realtime & delivery: postgres_changes filtered by RLS, deduped, reconnection/background/multi-device;
+  explicit delivered/read receipts (not inferred from insert); optimistic + idempotent queue via
+  flutter_secure_storage (no SQLite primary).
 
 ## Configuration
 

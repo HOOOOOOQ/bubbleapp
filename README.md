@@ -12,10 +12,13 @@ Read these before relying on the project:
 - **Database:** 11 migrations and 5 SQL test suites. The full suite passes on PostgreSQL 16 (292
   assertions). It has not been applied to a Supabase project.
 - **Edge Functions:** 14 functions. Type-checked in strict mode; not deployed or executed.
-- **Flutter app:** 19 implemented screens. Not compiled or tested in this environment. The messaging
-  client (chat list, thread, sending, realtime) is **not built**. See `app/README.md`.
-- **Android APK:** not built. The Flutter, Java, and Android SDK toolchains were unavailable in the build
-  environment, so no APK was built.
+- **Flutter app:** Full realtime messaging client — chat list, iOS conversation screen, delivery lifecycle
+  (sending→sent→delivered→read→failed), Supabase Realtime, offline queue with dedup, message interactions
+  (reply/forward/edit/delete/copy/pin/star/react/report/select), media & files via private buckets with
+  signed URLs, chat profile preview with blur, voice notes, global + in-chat search, business messaging
+  (labels, quick replies, welcome/away). 38 lib files pass parser checks; 6 test suites cover messaging
+  contracts. Not compiled here (no Flutter SDK / pub.dev).
+- **Android APK:** not built. Toolchains unavailable, so no APK was produced.
 
 ## Repository layout
 

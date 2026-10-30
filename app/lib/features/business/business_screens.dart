@@ -226,6 +226,16 @@ class BusinessDashboardScreen extends ConsumerWidget {
                 if (ok) ref.invalidate(myBusinessesProvider);
               },
             ),
+            const SectionHeader('Messaging'),
+            GlassCard(
+              onTap: () => context.push('/business/$businessId/messaging'),
+              child: const Row(children: [
+                Icon(Icons.chat_bubble_outline),
+                SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Customer chats', style: TextStyle(fontWeight: FontWeight.w700)), Text('Labels, quick replies, welcome & away messages')])),
+                Icon(Icons.chevron_right),
+              ]),
+            ),
             const SectionHeader('Verification'),
             OutlinedButton.icon(
               icon: const Icon(Icons.verified_outlined),
