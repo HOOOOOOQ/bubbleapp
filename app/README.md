@@ -5,20 +5,21 @@ RLS, RBAC, and SECURITY DEFINER RPCs decide everything.
 
 ## Status (read first)
 
-- **Not compiled or run in this environment** (no Flutter/Dart SDK, no Android toolchain, pub.dev blocked).
-  Lib files (38) pass a Node-based parser check; tests (6 files) cover messaging models, delivery lifecycle,
-  offline queue dedup, attachments, and realtime contracts. `flutter analyze` / `flutter test` / `flutter build`
-  have not been executed — the environment cannot fetch the SDK from storage.googleapis.com.
-- All database work (11 migrations, 292 assertions) and Edge Functions (14) from prior phases are preserved.
-- Implemented screens (routes in `lib/router/app_router.dart`): sign in (Email OTP), home shell with Chats tab,
-  chat list (search, filters, unread, pinned, archived, muted, folders, swipe actions), conversation screen
-  (iOS header, bubbles with ticks, date/unread separators, typing, reply/edit/delete/forward/copy/pin/star/react/report, multi-select, system messages),
-  new chat & new group, search (users, conversations, messages, channels, in-chat), business messaging (labels, quick replies, notes),
-  plus all prior screens: channels list, official channel, channel detail, create channel, verification, partners, business, settings, profile, owner, admin.
-- Media & voice: image/video/document/location/contact sharing via private `chat-media` / `chat-attachments` buckets with signed URLs,
-  size/MIME validation, upload progress contract; voice recorder (record/pause/resume/cancel/send, waveform, playback speed, duration).
-- Realtime & delivery: Supabase Realtime subscriptions filtered by RLS, deduped by message id, with reconnection / backgrounding / multi-device handling;
-  explicit delivery receipts (delivered → read) separate from insert success; optimistic updates with idempotency keys; offline queue persisted to secure storage.
+- **Not compiled or tested in the build environment that produced this repository.** The Flutter and
+  Dart SDKs, Java, and the Android SDK were not available, and pub.dev was unreachable. The code was
+  checked only with a Dart parser (all 23 files parse). `flutter pub get`, `flutter analyze`,
+  `flutter test`, and `flutter build apk` have **not** been run.
+- The dependency list in `pubspec.yaml` is the set the existing code uses. Features that need more
+  packages (voice and video calls, FCM client registration, media playback, camera and recording) are
+  not implemented, so their packages are not listed.
+- Implemented screens (routes in `lib/router/app_router.dart`): sign in (Email OTP), home shell,
+  channels list, official @BubbleApp channel, channel detail, create channel, verification home, apply
+  for verification, verification queue, partners home, partner apply, partner queue, business home,
+  create business, business dashboard, settings, profile edit, owner dashboard, admin console.
+- **Not implemented:** the messaging client. There is no chat list or conversation thread screen, and
+  no send, edit, delete, reply, forward, reaction, read-receipt, typing, offline-queue, or realtime code
+  in the repository. The database side of messaging (migrations 006 and 009) is in place and tested.
+  Most of the planned 112-page catalogue is also not built. Screens were not created as empty placeholders.
 
 ## Configuration
 

@@ -7,11 +7,6 @@ import '../features/auth/sign_in_screen.dart';
 import '../features/business/business_screens.dart';
 import '../features/channels/channels_screens.dart';
 import '../features/home/home_shell.dart';
-import '../features/messaging/business_messaging_screen.dart';
-import '../features/messaging/chat_list_screen.dart';
-import '../features/messaging/conversation_screen.dart';
-import '../features/messaging/new_chat_screen.dart';
-import '../features/messaging/search_screen.dart';
 import '../features/owner/owner_dashboard_screen.dart';
 import '../features/partners/partners_screens.dart';
 import '../features/settings/settings_screens.dart';
@@ -38,7 +33,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => HomeShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-          GoRoute(path: '/chats', builder: (context, state) => const ChatListScreen()),
           GoRoute(path: '/channels', builder: (context, state) => const ChannelsScreen()),
           GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),
           GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
@@ -73,11 +67,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings/profile', builder: (context, state) => const ProfileEditScreen()),
       GoRoute(path: '/owner', builder: (context, state) => const OwnerDashboardScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminConsoleScreen()),
-      GoRoute(path: '/chats/search', builder: (context, state) => const SearchScreen()),
-      GoRoute(path: '/chats/new', builder: (context, state) => const NewChatScreen()),
-      GoRoute(path: '/chats/new-group', builder: (context, state) => const NewGroupScreen()),
-      GoRoute(path: '/chats/:id', builder: (context, state) => ConversationScreen(conversationId: state.pathParameters['id']!)),
-      GoRoute(path: '/business/:bid/messaging', builder: (context, state) => BusinessMessagingScreen(businessId: state.pathParameters['bid']!)),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page not found')),
