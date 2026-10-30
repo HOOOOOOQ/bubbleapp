@@ -11,16 +11,29 @@ import '../features/calls/screens/call_settings_screen.dart';
 import '../features/calls/screens/incoming_call_screen.dart';
 import '../features/calls/screens/outgoing_call_screen.dart';
 import '../features/channels/channels_screens.dart';
+import '../features/communities/screens/community_create_screen.dart';
+import '../features/communities/screens/community_directory_screen.dart';
+import '../features/communities/screens/community_profile_screen.dart';
+import '../features/discovery/screens/discovery_screen.dart';
+import '../features/feed/screens/create_post_screen.dart';
+import '../features/feed/screens/post_detail_screen.dart';
+import '../features/feed/screens/social_feed_screen.dart';
+import '../features/groups/screens/group_info_screen.dart';
 import '../features/home/home_shell.dart';
 import '../features/messaging/business_messaging_screen.dart';
 import '../features/messaging/chat_list_screen.dart';
 import '../features/messaging/conversation_screen.dart';
 import '../features/messaging/new_chat_screen.dart';
 import '../features/messaging/search_screen.dart';
+import '../features/moderation/screens/report_screen.dart';
 import '../features/owner/owner_dashboard_screen.dart';
 import '../features/partners/partners_screens.dart';
 import '../features/settings/settings_screens.dart';
+import '../features/stories/screens/story_editor_screen.dart';
+import '../features/stories/screens/story_insights_screen.dart';
+import '../features/stories/screens/story_viewer_screen.dart';
 import '../features/verification/verification_screens.dart';
+import '../models/social.dart';
 import '../state/providers.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -88,6 +101,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/calls/incoming/:id', builder: (context, state) => IncomingCallScreen(callId: state.pathParameters['id']!)),
       GoRoute(path: '/calls/outgoing/:id', builder: (context, state) => OutgoingCallScreen(callId: state.pathParameters['id']!)),
       GoRoute(path: '/calls/active/:id', builder: (context, state) => ActiveCallScreen(callId: state.pathParameters['id']!)),
+      // Stories
+      GoRoute(path: '/stories/create', builder: (context, state) => const StoryEditorScreen()),
+      GoRoute(path: '/stories/view/:authorId', builder: (context, state) {
+        final stories = state.extra as List<Story>?;
+        return StoryViewerScreen(authorId: state.pathParameters['authorId']!, initialStories: stories);
+      }),
+      GoRoute(path: '/stories/insights/:storyId', builder: (context, state) => StoryInsightsScreen(storyId: state.pathParameters['storyId']!)),
+      // Communities
+      GoRoute(path: '/communities', builder: (context, state) => const CommunityDirectoryScreen()),
+      GoRoute(path: '/communities/new', builder: (context, state) => const CommunityCreateScreen()),
+      GoRoute(path: '/communities/:id', builder: (context, state) => CommunityProfileScreen(communityId: state.pathParameters['id']!)),
+      // Feed
+      GoRoute(path: '/feed', builder: (context, state) => const SocialFeedScreen()),
+      GoRoute(path: '/feed/create', builder: (context, state) {
+        final communityId = state.extra as String?;
+        return CreatePostScreen(communityId: communityId);
+      }),
+      GoRoute(path: '/feed/:id', builder: (context, state) => PostDetailScreen(postId: state.pathParameters['id']!)),
+      GoRoute(path: '/hashtag/:tag', builder: (context, state) => Scaffold(appBar: AppBar(title: Text('#${state.pathParameters['tag']}')), body: Center(child: Text('Posts for #${state.pathParameters['tag']} — uses post_hashtags with RLS')))),
+      GoRoute(path: '/discovery', builder: (context, state) => const DiscoveryScreen()),
+      GoRoute(path: '/groups/:id/info', builder: (context, state) => GroupInfoScreen(conversationId: state.pathParameters['id']!)),
+      GoRoute(path: '/reports/new', builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return ReportScreen(targetType: extra?['type'] as String?, targetId: extra?['id'] as String?);
+      }),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page not found')),

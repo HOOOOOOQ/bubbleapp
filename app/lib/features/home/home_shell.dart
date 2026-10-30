@@ -6,6 +6,7 @@ import '../../config/app_config.dart';
 import '../../models/models.dart';
 import '../../state/providers.dart';
 import '../../widgets/common.dart';
+import '../stories/widgets/stories_tray.dart';
 
 const _tabs = ['/home', '/chats', '/channels', '/business', '/settings'];
 
@@ -104,6 +105,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const StoriesTray(),
+            const SizedBox(height: 12),
+            const SectionHeader('Social'),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.6,
+              children: const [
+                ActionTile(icon: Icons.feed_outlined, label: 'Social Feed', route: '/feed'),
+                ActionTile(icon: Icons.groups_outlined, label: 'Communities', route: '/communities'),
+                ActionTile(icon: Icons.explore_outlined, label: 'Discover', route: '/discovery'),
+                ActionTile(icon: Icons.campaign_outlined, label: 'Channels', route: '/channels'),
+              ],
+            ),
             AsyncBody<UserProfile?>(
               value: profile,
               onRetry: () => ref.invalidate(myProfileProvider),

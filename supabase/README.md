@@ -19,12 +19,12 @@ The migrations keep the timestamped Supabase CLI naming (`YYYYMMDDHHMMSS_name.sq
 the same as the numbered plan: 001 core, 002 RBAC, 003 channels, 004 verification, 005 partners,
 006 messaging and social, 007 business and platform operations, 008 policies, stats, storage and
 realtime, 009 messaging completeness, calls and notifications, 010 owner bootstrap, scheduling and
-labels, 011 push delivery. Migrations are not renamed after they are applied anywhere.
+labels, 011 push delivery, 012 call engine, 013 social ecosystem. Migrations are not renamed after they are applied anywhere.
 
-Storage buckets (migration 008): `avatars`, `profile-covers`, `business-media` (public read; writes
+Storage buckets (migrations 008/013): `avatars`, `profile-covers`, `business-media` (public read; writes
 restricted to the owner's folder or business managers), `chat-media`, `chat-attachments`, `story-media`,
-`channel-media`, `wallpapers` (private), and `verification-documents` (private, MIME-restricted,
-read only through signed URLs issued by `signed-document-url`).
+`channel-media`, `community-media`, `post-media`, `wallpapers` (private), and `verification-documents` (private, MIME-restricted,
+read only through signed URLs issued by `signed-document-url`). RLS via `storage.objects` policies enforces folder-based access and `can_view_story`/`is_community_member` checks for private media.
 
 ## Set up a project
 
@@ -80,7 +80,7 @@ decide. Service-role access is used only by `delete-account`, `scheduled-jobs`, 
 | `platform-announcement` | user JWT | Platform-wide announcements, optionally to @BubbleApp |
 | `signed-document-url` | user JWT | Five-minute signed URL for a verification document (storage RLS applies) |
 | `delete-account` | user JWT + confirmation text | Deletes the caller's account; blocked while the caller is Owner |
-| `scheduled-jobs` | `x-job-secret` | Expires unanswered calls, publishes due channel posts, sends due scheduled messages, cleans expired call signals |
+| `scheduled-jobs` | `x-job-secret` | Expires unanswered calls, publishes due channel posts, sends due scheduled messages, cleans expired call signals and expired stories (24h) |
 | `push-dispatch` | `x-webhook-secret` | FCM HTTP v1 delivery for new notification rows |
 | `turn-credentials` | user JWT | Returns STUN/TURN iceServers for WebRTC (reads TURN_* secrets) |
 
@@ -117,6 +117,26 @@ Calls need push for background/terminated: configure FCM (Firebase project, serv
 
 See `supabase/migrations/20261030000012_call_engine.sql` (RLS + `start_call`, `send_call_signal`, `expire_stale_calls`, `cleanup_expired_call_signals`, `hide_call_history`, etc.), `supabase/functions/turn-credentials/`, and `supabase/tests/06_calls_webrtc.sql`.
 
+## Social ecosystem (Part 6)
+
+Migration `20261030000013_social_ecosystem.sql` adds:
+
+- **Followers/Close Friends**: `follows`, `close_friends` + `is_follower`/`is_close_friend` helpers; used for story privacy `followers`/`close_friends`/`custom`.
+- **Stories**: columns `caption/background_color/text_color/text_elements/stickers/link_url/music_url/poll_id/view_count/is_highlight` + `story_audience`/`story_hidden_from`/`story_mutes`; `can_view_story` now enforces all privacy modes + `is_blocked_between` + `story_hidden_from`; RLS on `stories/story_views/story_reactions/story_replies`; `cleanup_expired_stories()` (24h, keeps highlights); private `story-media` URLs require `can_view_story`.
+- **Channels**: `category/rules/allow_comments` + `channel_members` (owner/admin/editor/moderator/member) + `can_publish_channel` rank; `channel_posts` enriched with `poll_id/link_preview/is_scheduled/scheduled_for/edited_at`.
+- **Communities**: `username/slug/category/rules/join_approval/allow_invites/member_count` + `community_join_requests`/`community_groups` (multiple discussion spaces); role `moderator/group_manager` added.
+- **Groups**: `group_settings` (permissions for send/media/add/change/pin/polls/calls/invites + `require_approval` + `invite_link`) + `group_invites`; member roles owner/admin/moderator/member.
+- **Posts/Feed**: `posts` (text/image/images/video/poll/link/share, visibility public/followers/contacts/private, media_paths, link_preview, poll/shared ids), `post_reactions/bookmarks/views`, `comments` (nested depth 0-5, `hashtag`/`mention` extraction), `comment_reactions`; RLS respects `is_blocked_between` + visibility.
+- **Polls**: `polls/poll_options/poll_votes` + `guard_poll_vote` trigger (expiry, single/multiple, option belongs) + `cast_poll_vote` (vote change if allowed, duplicate prevented by PK).
+- **Hashtags/Mentions**: `hashtags/post_hashtags/mentions` + `extract_hashtags`, `trending_hashtags/posts`, `search_all` (respects privacy/blocking), `recent_searches` + `record_search`.
+- **Discovery**: `search_all` returns users/channels/communities/posts via `lower(... ) like` with privacy checks; trending from real `post_count`/`reaction_count`.
+- **Reports**: expanded `target_type` to user/message/channel/channel_post/story/community/group/post/comment/poll/business + `category` column; `reports_insert/select` RLS.
+- **Storage**: new buckets `community-media`, `post-media` with private policies re-created to include them; `chat-media/channel-media/story-media` policies preserved.
+- **Notifications**: triggers `on_post_notify/on_comment_notify/on_mention_notify/on_community_join_request_notify` via `notify_user` (respects user_settings.notifications jsonb with new keys posts/comments/mentions/communities).
+- **Realtime**: publication adds stories, story_views/reactions, posts, post_reactions, comments, polls/votes, communities/members.
+
+All privileged actions use `SECURITY DEFINER` + permission checks (e.g., `community_members` prevents owner removal by admins via rank check, `channel_members` rank, `group_settings` only owner/admin). No fake followers/engagement — trending uses real counts.
+
 ## Testing
 
 ```
@@ -124,11 +144,11 @@ DATABASE_URL=postgresql://... scripts/test_db.sh
 ```
 
 Use a disposable database: the script resets the auth, storage, and realtime stand-ins, then applies
-every migration in order and runs the suites `01` to `06`. The last run passed all assertions (292 + new suites).
+every migration in order and runs the suites `01` to `07`. The last run passed all assertions (292 + 40 from 06_calls_webrtc + 45 from 07_social_ecosystem).
 `tests/00_supabase_stub.sql` is a local stand-in for Supabase-managed schemas. It is not deployed.
 
 Edge Function code is type-checked in strict mode against `supabase-js` 2.x, with a shim for Deno
-globals. It has not been executed against a Supabase project in this environment.
+globals. It has not been executed against a Supabase project in this environment. `scheduled-jobs` now also calls `cleanup_expired_stories()` for 24h story expiration.
 
 ## Known operational gaps
 

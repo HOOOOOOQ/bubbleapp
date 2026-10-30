@@ -14,13 +14,14 @@ Deno.serve(async (req) => {
   if (!safeEqual(secret, requiredEnv("JOB_SECRET"))) return json({ error: "Forbidden" }, 403);
 
   const admin = serviceClient();
-  const [calls, posts, messages, signals] = await Promise.all([
+  const [calls, posts, messages, signals, stories] = await Promise.all([
     admin.rpc("expire_stale_calls"),
     admin.rpc("dispatch_due_channel_posts"),
     admin.rpc("dispatch_due_scheduled_messages", { p_limit: 100 }),
     admin.rpc("cleanup_expired_call_signals"),
+    admin.rpc("cleanup_expired_stories"),
   ]);
-  const errors = [calls.error, posts.error, messages.error].filter(Boolean).map((e) => e!.message);
+  const errors = [calls.error, posts.error, messages.error, signals.error, stories.error].filter(Boolean).map((e) => e!.message);
   if (errors.length) return json({ ok: false, errors }, 500);
   return json({
     ok: true,
@@ -28,5 +29,6 @@ Deno.serve(async (req) => {
     published_posts: posts.data ?? 0,
     sent_scheduled_messages: messages.data ?? 0,
     cleaned_signals: signals.data ?? 0,
+    cleaned_stories: stories.data ?? 0,
   });
 });
