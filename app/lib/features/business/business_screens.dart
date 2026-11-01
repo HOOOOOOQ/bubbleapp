@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/business_partner.dart';
 import '../../models/models.dart';
+import '../../state/business_partner_providers.dart';
 import '../../state/providers.dart';
 import '../../widgets/common.dart';
 
@@ -29,49 +31,109 @@ class BusinessHomeScreen extends ConsumerWidget {
         value: businesses,
         onRetry: () => ref.invalidate(myBusinessesProvider),
         builder: (list) {
-          if (list.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Set up a business account to manage a public profile, catalog and quick replies.',
-                        textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    GradientButton(
-                      label: 'Create business',
-                      icon: Icons.add_business_outlined,
-                      onPressed: () => context.push('/business/new'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          return ListView.separated(
+          final invites =
+              ref.watch(myBusinessInvitesProvider).valueOrNull ?? const <BusinessInviteInboxItem>[];
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final b = list[i];
-              return GlassCard(
-                onTap: () => context.push('/business/${b.id}'),
-                child: Row(children: [
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Flexible(child: Text(b.name, style: const TextStyle(fontWeight: FontWeight.w700))),
-                        if (b.isVerified) ...[const SizedBox(width: 4), const VerifiedMark()],
-                      ]),
-                      Text('@${b.username} · ${b.category}'),
-                      if (!b.isSetupComplete) const StatusBadge(label: 'Setup incomplete', color: Colors.orange),
-                    ]),
+            children: [
+              if (list.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Set up a business account to manage a public profile, catalog and quick replies.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      GradientButton(
+                        label: 'Create business',
+                        icon: Icons.add_business_outlined,
+                        onPressed: () => context.push('/business/new'),
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right),
-                ]),
-              );
-            },
+                )
+              else
+                for (final b in list)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: GlassCard(
+                      onTap: () => context.push('/business/${b.id}'),
+                      child: Row(children: [
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Flexible(child: Text(b.name, style: const TextStyle(fontWeight: FontWeight.w700))),
+                              if (b.isVerified) ...[const SizedBox(width: 4), const VerifiedMark()],
+                            ]),
+                            Text('@${b.username} · ${b.category}'),
+                            if (!b.isSetupComplete) const StatusBadge(label: 'Setup incomplete', color: Colors.orange),
+                          ]),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ]),
+                    ),
+                  ),
+              if (invites.isNotEmpty) ...[
+                const SectionHeader('Team invitations'),
+                for (final invite in invites)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: GlassCard(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Expanded(
+                            child: Text(invite.businessName,
+                                style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                          StatusBadge(label: invite.role),
+                        ]),
+                        Text('@${invite.businessUsername} · invited by ${invite.invitedByName}'),
+                        if (invite.note != null && invite.note!.isNotEmpty) Text(invite.note!),
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () async {
+                                final ok = await runAction(
+                                  context,
+                                  () => ref
+                                      .read(businessPartnerRepositoryProvider)
+                                      .respondToInvite(invite.id, accept: true),
+                                  success: 'You joined ${invite.businessName}',
+                                );
+                                if (ok) {
+                                  ref.invalidate(myBusinessInvitesProvider);
+                                  ref.invalidate(myBusinessesProvider);
+                                  ref.invalidate(myBusinessMembershipsProvider);
+                                }
+                              },
+                              child: const Text('Accept'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final ok = await runAction(
+                                  context,
+                                  () => ref
+                                      .read(businessPartnerRepositoryProvider)
+                                      .respondToInvite(invite.id, accept: false),
+                                  success: 'Invitation declined',
+                                );
+                                if (ok) ref.invalidate(myBusinessInvitesProvider);
+                              },
+                              child: const Text('Decline'),
+                            ),
+                          ),
+                        ]),
+                      ]),
+                    ),
+                  ),
+              ],
+            ],
           );
         },
       ),
