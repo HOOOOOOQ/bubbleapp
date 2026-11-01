@@ -200,6 +200,21 @@ class BusinessDashboardScreen extends ConsumerWidget {
                 ]),
               ),
             ),
+            const SectionHeader('Workspace'),
+            GlassCard(
+              onTap: () => context.push('/business/$businessId/workspace'),
+              child: const Row(children: [
+                Icon(Icons.dashboard_customize_outlined),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Business workspace', style: TextStyle(fontWeight: FontWeight.w700)),
+                    Text('Team, catalog, inbox, customers and analytics'),
+                  ]),
+                ),
+                Icon(Icons.chevron_right),
+              ]),
+            ),
             const SectionHeader('Mode'),
             GradientButton(
               label: 'Switch to business mode',

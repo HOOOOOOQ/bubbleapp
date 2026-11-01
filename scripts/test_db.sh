@@ -13,8 +13,8 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   "${PSQL[@]}" -f "$f"
 done
 "${PSQL[@]}" -f "$ROOT/supabase/tests/01_helpers.sql"
-"${PSQL[@]}" -f "$ROOT/supabase/tests/02_scenarios.sql"
-"${PSQL[@]}" -f "$ROOT/supabase/tests/03_scenarios_business_social_ops.sql"
-"${PSQL[@]}" -f "$ROOT/supabase/tests/04_scenarios_messaging_calls.sql"
-"${PSQL[@]}" -f "$ROOT/supabase/tests/05_scenarios_bootstrap_scheduling_storage.sql"
+for f in "$ROOT"/supabase/tests/0[2-9]*.sql; do
+  echo "== suite $(basename "$f")"
+  "${PSQL[@]}" -f "$f"
+done
 echo "== suite finished"

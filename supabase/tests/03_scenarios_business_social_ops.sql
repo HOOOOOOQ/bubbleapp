@@ -115,7 +115,7 @@ select tst.expect_error($$select * from public.admin_list_users()$$, 'Permission
 select tst.ok(not (public.my_access() ->> 'is_owner')::boolean, 'access snapshot reports no owner for users');
 select tst.as_user('00000000-0000-4000-8000-0000000000a2');
 select tst.ok((public.owner_dashboard_stats() ->> 'total_users')::int >= 8, 'admin with analytics.read sees live user totals');
-select tst.ok(tst.count_q($$select id from public.admin_list_users(null, null, 50, 0)$$) >= 8, 'admin lists users with users.read');
+select tst.ok(tst.count_q($$select id from public.admin_list_users(null, null, null, 50, 0)$$) >= 8, 'admin lists users with users.read');
 select tst.as_user('00000000-0000-4000-8000-0000000000a1');
 select tst.ok((public.owner_dashboard_stats() ->> 'total_channels')::int >= 2, 'owner dashboard reports channels');
 select tst.ok((public.my_access() ->> 'is_owner')::boolean, 'access snapshot identifies the owner');

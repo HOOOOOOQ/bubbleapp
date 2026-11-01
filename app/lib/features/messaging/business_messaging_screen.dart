@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/messaging_repository.dart';
+import '../../models/business_partner.dart';
 import '../../models/messaging.dart';
+import '../../state/business_partner_providers.dart';
 import '../../state/messaging_providers.dart';
 import '../../state/providers.dart';
 import '../../widgets/common.dart';
@@ -59,30 +61,65 @@ class _BusinessChatsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(chatListProvider);
-    // Filter to business-labeled chats — for demo, show all and let labels filter.
-    final chats = state.conversations;
+    final args = (businessId, null);
+    final inquiries = ref.watch(businessInquiriesProvider(args));
     return RefreshIndicator(
-      onRefresh: () => ref.read(chatListProvider.notifier).refresh(),
-      child: chats.isEmpty
-          ? ListView(children: const [EmptyState(message: 'No customer conversations yet', icon: Icons.chat_outlined)])
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: chats.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
-                final c = chats[i];
-                return GlassCard(
-                  onTap: () => context.push('/chats/${c.id}'),
-                  child: Row(children: [
-                    CircleAvatar(child: Text(c.displayName('?')[0].toUpperCase())),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(c.displayName('Chat'), style: const TextStyle(fontWeight: FontWeight.w600)), Text(c.lastMessagePreview ?? 'No messages', maxLines: 1, overflow: TextOverflow.ellipsis)])),
-                    const Icon(Icons.chevron_right, size: 18),
-                  ]),
-                );
-              },
-            ),
+      onRefresh: () async {
+        ref.invalidate(businessInquiriesProvider(args));
+        await ref.read(businessInquiriesProvider(args).future);
+      },
+      child: AsyncBody<List<BusinessInquiry>>(
+        value: inquiries,
+        onRetry: () => ref.invalidate(businessInquiriesProvider(args)),
+        builder: (list) {
+          if (list.isEmpty) {
+            return ListView(children: const [
+              EmptyState(
+                message: 'No customer conversations yet. Inquiries from your catalog arrive here.',
+                icon: Icons.chat_outlined,
+              ),
+            ]);
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (ctx, i) {
+              final inquiry = list[i];
+              return GlassCard(
+                onTap: () => context.push('/business/$businessId/inbox/${inquiry.id}'),
+                child: Row(children: [
+                  CircleAvatar(
+                    child: Text(inquiry.customerName.isEmpty
+                        ? '?'
+                        : inquiry.customerName[0].toUpperCase()),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(inquiry.customerName,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        inquiry.lastMessage ?? inquiry.subject,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ]),
+                  ),
+                  StatusBadge(label: inquiry.status),
+                  IconButton(
+                    tooltip: 'Open conversation',
+                    icon: const Icon(Icons.forum_outlined, size: 18),
+                    onPressed: inquiry.conversationId.isEmpty
+                        ? null
+                        : () => context.push('/chats/${inquiry.conversationId}'),
+                  ),
+                ]),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

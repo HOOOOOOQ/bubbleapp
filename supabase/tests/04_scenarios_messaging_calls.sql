@@ -49,13 +49,14 @@ select tst.as_user('00000000-0000-4000-8000-0000000000b1');
 select public.start_call(:'c13'::uuid, 'voice') as call1 \gset
 select tst.ok(tst.count_q(format($$select id from public.calls where id = %L and status = 'ringing'$$, :'call1')) = 1, 'call starts ringing');
 select tst.expect_error(format($$select public.start_call(%L::uuid, 'video')$$, :'c13'), 'already in progress', 'a second call is refused while one rings');
-select tst.expect_error(format($$select public.answer_call(%L::uuid)$$, :'call1'), 'Call not found', 'caller cannot answer their own call');
+select tst.as_user('00000000-0000-4000-8000-0000000000a4');
+select tst.expect_error(format($$select public.answer_call(%L::uuid)$$, :'call1'), 'Not a participant', 'a third party cannot answer');
 select tst.as_user('00000000-0000-4000-8000-0000000000b3');
 select tst.ok(tst.count_q(format($$select id from public.notifications where kind = 'incoming_call' and user_id = '00000000-0000-4000-8000-0000000000b3'$$)) >= 1, 'callee receives an incoming-call notification');
 select tst.expect_ok(format($$select public.answer_call(%L::uuid)$$, :'call1'), 'callee answers');
 select tst.expect_error(format($$select public.decline_call(%L::uuid)$$, :'call1'), 'no longer ringing', 'answered call cannot be declined');
 select tst.as_user('00000000-0000-4000-8000-0000000000a4');
-select tst.expect_error(format($$select public.answer_call(%L::uuid)$$, :'call1'), 'Call not found', 'a third party cannot answer');
+select tst.expect_error(format($$select public.end_call(%L::uuid)$$, :'call1'), 'Call not found', 'a third party cannot end the call');
 select tst.as_user('00000000-0000-4000-8000-0000000000b3');
 select tst.expect_ok(format($$select public.end_call(%L::uuid)$$, :'call1'), 'callee ends the answered call');
 select tst.ok((select status from public.calls where id = :'call1') = 'ended', 'ended call is recorded');

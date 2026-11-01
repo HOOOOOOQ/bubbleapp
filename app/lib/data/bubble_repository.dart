@@ -418,18 +418,17 @@ class BubbleRepository {
 
   // ---------------------------------------------------------------- business
 
+  /// Businesses the signed-in account belongs to. Uses the Part 8 RPC so the
+  /// server decides membership, role and which columns are visible (the private
+  /// contact columns are no longer granted on `businesses`).
   Future<List<BusinessSummary>> myBusinesses() async {
-    final uid = currentUserId;
-    if (uid == null) return const [];
-    final rows = await _client
-        .from('business_members')
-        .select('businesses(*)')
-        .eq('user_id', uid);
-    return rows
-        .map((r) => r['businesses'])
-        .whereType<Map<String, dynamic>>()
-        .map(BusinessSummary.fromJson)
-        .toList();
+    if (currentUserId == null) return const [];
+    final data = await _client.rpc('business_my_businesses');
+    if (data is! List) return const [];
+    return data.whereType<Object>().map((row) {
+      final map = row is Map ? row.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
+      return BusinessSummary.fromJson(map);
+    }).toList();
   }
 
   Future<String> createBusiness({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/models.dart';
 import '../../state/providers.dart';
@@ -16,6 +17,18 @@ class PartnersScreen extends ConsumerWidget {
     final access = ref.watch(accessProvider).valueOrNull ?? AccessSnapshot.empty;
     return BubblePage(
       title: 'Partner program',
+      actions: [
+        IconButton(
+          tooltip: 'Partner workspace',
+          icon: const Icon(Icons.workspace_premium_outlined),
+          onPressed: () => context.push('/partners/workspace'),
+        ),
+        IconButton(
+          tooltip: 'Partner directory',
+          icon: const Icon(Icons.travel_explore),
+          onPressed: () => context.push('/partners/directory'),
+        ),
+      ],
       child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(partnerDashboardProvider);

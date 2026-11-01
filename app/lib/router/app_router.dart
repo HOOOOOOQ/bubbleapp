@@ -6,6 +6,7 @@ import '../features/admin/admin_console_screen.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/business/business_screens.dart';
+import '../features/business/business_workspace_screens.dart';
 import '../features/calls/screens/active_call_screen.dart';
 import '../features/calls/screens/call_history_screen.dart';
 import '../features/calls/screens/call_settings_screen.dart';
@@ -34,6 +35,7 @@ import '../features/owner/security_center_screen.dart';
 import '../features/owner/audit_log_screen.dart';
 import '../features/owner/owner_control_center_screen.dart';
 import '../features/moderation/moderation_center_screen.dart';
+import '../features/partners/partner_workspace_screens.dart';
 import '../features/partners/partners_screens.dart';
 import '../features/settings/settings_screens.dart';
 import '../features/stories/screens/story_editor_screen.dart';
@@ -89,11 +91,87 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/partners', builder: (context, state) => const PartnersScreen()),
       GoRoute(path: '/partners/apply', builder: (context, state) => const PartnerApplyScreen()),
       GoRoute(path: '/partners/queue', builder: (context, state) => const PartnerQueueScreen()),
+      GoRoute(path: '/partners/workspace', builder: (context, state) => const PartnerWorkspaceScreen()),
+      GoRoute(path: '/partners/profile', builder: (context, state) => const PartnerProfileEditScreen()),
+      GoRoute(path: '/partners/resources', builder: (context, state) => const PartnerResourcesScreen()),
+      GoRoute(path: '/partners/support', builder: (context, state) => const PartnerSupportScreen()),
+      GoRoute(path: '/partners/directory', builder: (context, state) => const PartnerDirectoryScreen()),
+      GoRoute(
+        path: '/partners/application',
+        builder: (context, state) =>
+            PartnerApplicationScreen(applicationId: state.uri.queryParameters['id']),
+      ),
+      GoRoute(
+        path: '/partners/:userId',
+        builder: (context, state) =>
+            PartnerPublicProfileScreen(userId: state.pathParameters['userId']!),
+      ),
       GoRoute(path: '/business/new', builder: (context, state) => const CreateBusinessScreen()),
       GoRoute(
         path: '/business/:id',
         builder: (context, state) =>
             BusinessDashboardScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/workspace',
+        builder: (context, state) =>
+            BusinessWorkspaceScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/edit',
+        builder: (context, state) =>
+            BusinessProfileEditScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/team',
+        builder: (context, state) => BusinessTeamScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/catalog',
+        builder: (context, state) => BusinessCatalogScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/catalog/new',
+        builder: (context, state) =>
+            BusinessCatalogEditorScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/catalog/:itemId',
+        builder: (context, state) => BusinessCatalogEditorScreen(
+          businessId: state.pathParameters['id']!,
+          itemId: state.pathParameters['itemId'],
+        ),
+      ),
+      GoRoute(
+        path: '/business/:id/inbox',
+        builder: (context, state) => BusinessInboxScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/inbox/:inquiryId',
+        builder: (context, state) => BusinessInquiryScreen(
+          businessId: state.pathParameters['id']!,
+          inquiryId: state.pathParameters['inquiryId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/business/:id/customers',
+        builder: (context, state) =>
+            BusinessCustomersScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/analytics',
+        builder: (context, state) =>
+            BusinessAnalyticsScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/business/:id/verification',
+        builder: (context, state) =>
+            BusinessVerificationScreen(businessId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/businesses/:id',
+        builder: (context, state) =>
+            BusinessPublicProfileScreen(businessId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings/profile', builder: (context, state) => const ProfileEditScreen()),
       GoRoute(path: '/owner', builder: (context, state) => const OwnerDashboardScreen()),

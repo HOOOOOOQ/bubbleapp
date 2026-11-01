@@ -9,15 +9,17 @@ administration. The client is Flutter (Material 3, Riverpod, GoRouter). The back
 
 Read these before relying on the project:
 
-- **Database:** 11 migrations and 5 SQL test suites. The full suite passes on PostgreSQL 16 (292
-  assertions). It has not been applied to a Supabase project.
+- **Database:** 16 migrations and the suites in `supabase/tests` (02–09). All suites pass on PostgreSQL 16
+  against a fresh database: 509 assertions, 0 failures. It has not been applied to a Supabase project.
 - **Edge Functions:** 14 functions. Type-checked in strict mode; not deployed or executed.
-- **Flutter app:** Full realtime messaging client — chat list, iOS conversation screen, delivery lifecycle
+- **Flutter app:** Full realtime messaging client — chat list, conversation screen, delivery lifecycle
   (sending→sent→delivered→read→failed), Supabase Realtime, offline queue with dedup, message interactions
   (reply/forward/edit/delete/copy/pin/star/react/report/select), media & files via private buckets with
   signed URLs, chat profile preview with blur, voice notes, global + in-chat search, business messaging
-  (labels, quick replies, welcome/away). 38 lib files pass parser checks; 6 test suites cover messaging
-  contracts. Not compiled here (no Flutter SDK / pub.dev).
+  (labels, quick replies, welcome/away). Part 8 adds the business workspace (team, catalog, inquiry inbox,
+  customers, analytics, verification) and the partner workspace (benefits, directory, resources, support,
+  application lifecycle). The Flutter SDK is unavailable in this environment, so `dart analyze`,
+  `flutter test` and builds were **not** run; see `docs/PART8_BUSINESS_PARTNER.md` for the exact status.
 - **Android APK:** not built. Toolchains unavailable, so no APK was produced.
 
 ## Repository layout

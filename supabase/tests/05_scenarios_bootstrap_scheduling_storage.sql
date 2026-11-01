@@ -141,8 +141,10 @@ select tst.as_user('00000000-0000-4000-8000-0000000000b3');
 select tst.ok(tst.count_q(format($$select id from public.business_labels where business_id = %L$$, :'biz')) = 1,
   'operator can read business labels');
 select tst.ok(tst.count_q($$select id from public.business_labels where name = 'VIP'$$) = 1, 'label read is scoped to members');
-select tst.expect_error(format($$insert into public.business_labels (business_id, name) values (%L::uuid, 'Sneaky')$$, :'biz'),
-  'row-level security|violates', 'operator cannot create business labels');
+-- 0016 grants customer-label management to team members with customers.manage
+-- (owners, admins/managers, support/operator). The label stays inside the tenant.
+select tst.expect_ok(format($$insert into public.business_labels (business_id, name) values (%L::uuid, 'Sneaky')$$, :'biz'),
+  'operator with customers.manage can label customers');
 select tst.as_user('00000000-0000-4000-8000-0000000000b1');
 select tst.ok(tst.count_q($$select id from public.business_labels where name = 'VIP'$$) = 0, 'non-members cannot read business labels');
 
