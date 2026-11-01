@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/business_partner.dart';
 import '../../state/business_partner_providers.dart';
-import '../../state/providers.dart';
 import '../../widgets/common.dart';
 
 // ---------------------------------------------------------------- workspace

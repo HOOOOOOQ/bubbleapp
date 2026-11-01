@@ -956,6 +956,7 @@ class _BusinessCatalogEditorScreenState extends ConsumerState<BusinessCatalogEdi
             items: const [
               DropdownMenuItem(value: 'product', child: Text('Product')),
               DropdownMenuItem(value: 'service', child: Text('Service')),
+              DropdownMenuItem(value: 'digital', child: Text('Digital')),
             ],
             onChanged: (v) => setState(() => _kind = v ?? _kind),
           ),

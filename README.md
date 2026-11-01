@@ -32,6 +32,7 @@ supabase/
   tests/              SQL test suites
   config.toml         Supabase CLI project configuration
 scripts/test_db.sh    Applies migrations to a disposable database and runs the suites
+docs/                 Part reports (see docs/PART8_BUSINESS_PARTNER.md)
 .env.example          Every setting the project needs, with no secret values
 ```
 
